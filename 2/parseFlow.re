@@ -44,15 +44,13 @@ let rec flowTypeToTyped = (flowType: FlowAst.Type.t) => {
   | FlowAst.Type.Mixed => DotTyped.Any
   | FlowAst.Type.Void => DotTyped.Void
   | FlowAst.Type.Null => DotTyped.Null
-  | FlowAst.Type.StringLiteral(_) => DotTyped.String
+  | FlowAst.Type.StringLiteral({value}) => DotTyped.StringLiteral(value)
   | FlowAst.Type.NumberLiteral(_) => DotTyped.Float
   | FlowAst.Type.BooleanLiteral(_) => DotTyped.Boolean
   | FlowAst.Type.Nullable(t) => DotTyped.Optional(flowTypeToTyped(t))
   | FlowAst.Type.Array(t) => DotTyped.Array(flowTypeToTyped(t))
   | FlowAst.Type.Tuple(types) =>
-    DotTyped.Tuple(
-      types |. Belt.List.toArray |. Belt.Array.map(flowTypeToTyped),
-    )
+    DotTyped.Tuple(listTypesToTypedArray(types))
   | FlowAst.Type.Function(f) => functionTypeToTyped(f)
   | FlowAst.Type.Object(o) => objectTypeToTyped(o)
   | FlowAst.Type.Generic(t) =>
@@ -67,15 +65,22 @@ let rec flowTypeToTyped = (flowType: FlowAst.Type.t) => {
         )
       };
     DotTyped.Named(identifierFromGeneric(t.id));
-  | _ =>
+  | FlowAst.Type.Union(a, b, types) =>
+    let all = List.concat([a, b], types);
+    DotTyped.Union(listTypesToTypedArray(all));
+  | FlowAst.Type.Typeof(t) => DotTyped.Typeof(flowTypeToTyped(t))
+  | a =>
+    Js.log(a);
     raise(
       Errors2.NotSupported({
         message: "Unsupported Flow type",
         loc: errorLocation(loc),
       }),
-    )
+    );
   };
 }
+and listTypesToTypedArray = types =>
+  types |. Belt.List.toArray |. Belt.Array.map(flowTypeToTyped)
 and functionTypeToTyped = (f: FlowAst.Type.Function.t) => {
   let {params: (formal, rest), returnType, typeParameters: _typeParams}: FlowAst.Type.Function.t = f;
   let paramToProperty = ((_loc, param): FlowAst.Type.Function.Param.t) =>
@@ -129,6 +134,14 @@ and objectTypeToTyped = (obj: FlowAst.Type.Object.t) => {
     typeParameters: [||],
     extends: None,
   });
+};
+
+/* TODO: add support for bound, variance and default */
+let typeParameterToTyped =
+    (parameter: FlowAst.Type.ParameterDeclaration.TypeParam.t)
+    : string => {
+  let (_, t) = parameter;
+  t.name;
 };
 
 let typeAnnotationToTyped = (annotation: FlowAst.Type.annotation) => {
@@ -246,7 +259,24 @@ let flowAstToTypedAst = ((loc: Loc.t, s)) =>
   | FlowAst.Statement.ClassDeclaration(class_)
       when Option.isSome(extractReactComponentFromClass(class_)) =>
     Option.getExn(extractReactComponentFromClass(class_))
+  | FlowAst.Statement.TypeAlias({id, typeParameters, right}) =>
+    let params =
+      Option.map(typeParameters, ((_, {params})) =>
+        List.map(params, typeParameterToTyped)
+      );
 
+    DotTyped.TypeAliasDeclaration({
+      name: dotTypedIdentifier(id),
+      type_: DotTyped.TypeAlias(params, flowTypeToTyped(right)),
+    });
+
+  | FlowAst.Statement.DeclareModule(_module) =>
+    raise(
+      Errors2.NotSupported({
+        message: "Not implemented - DeclareModule",
+        loc: errorLocation(loc),
+      }),
+    )
   | _ =>
     raise(
       Errors2.NotSupported({

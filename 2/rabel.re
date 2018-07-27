@@ -59,6 +59,9 @@ module Types = {
   };
 
   let string = () => "string";
+
+  let stringLiteral = value => "\"" ++ value ++ "\"";
+
   let float = () => "float";
   let int = () => "int";
   let bool = () => "bool";
@@ -67,11 +70,12 @@ module Types = {
 
   let regex = () => "Js.Re.t";
   let dict = t => Ast.apply("Js.Dict.t", [|t|]);
-
   let optional = t => Ast.apply("option", [|t|]);
   let array = t => Ast.apply("array", [|t|]);
 
   let tuple = ts => Ast.apply("", ts);
+
+  let union = t => Js.Array.joinWith(" | ", t);
 
   let function_ = (parameters, returnType) => {
     let hasOptional =
@@ -99,6 +103,8 @@ module Types = {
 
     "(" ++ fullParams ++ ") => " ++ returnType;
   };
+
+  let promise = t => "Js.Promise.t(" ++ t ++ ")";
 };
 
 let module_ = (name, statements) =>
@@ -132,3 +138,18 @@ let function_ = (ts, returnValue) => {
   let params = Js.Array.joinWith(", ", paramStrs);
   "(" ++ params ++ ") => {" ++ returnValue ++ "}";
 };
+
+let pascalToCamelCase = str =>
+  if (String.length(str) > 0) {
+    String.mapi(
+      (index, char) =>
+        if (index === 0) {
+          Char.lowercase(char);
+        } else {
+          char;
+        },
+      str,
+    );
+  } else {
+    str;
+  };

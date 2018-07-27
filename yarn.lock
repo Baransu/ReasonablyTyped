@@ -941,9 +941,9 @@ browserify@^16.1.1:
     vm-browserify "^1.0.0"
     xtend "^4.0.0"
 
-bs-platform@^3.0.0:
-  version "3.1.4"
-  resolved "https://registry.yarnpkg.com/bs-platform/-/bs-platform-3.1.4.tgz#fe8495443b35aff73dfb61cba1e6d7b88311910b"
+bs-platform@^4.0.1:
+  version "4.0.1"
+  resolved "https://registry.npmjs.org/bs-platform/-/bs-platform-4.0.1.tgz#544b58c2a53299cf406b57477e06389e4adab421"
 
 bser@^2.0.0:
   version "2.0.0"

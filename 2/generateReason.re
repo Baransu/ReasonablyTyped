@@ -30,12 +30,17 @@ let rec fromDotTyped =
   | DotTyped.Null => Rabel.Types.null()
   | DotTyped.Float => Rabel.Types.float()
   | DotTyped.String => Rabel.Types.string()
+  | DotTyped.StringLiteral(value) => Rabel.Types.stringLiteral(value)
   | DotTyped.Boolean => Rabel.Types.bool()
+  | DotTyped.Named(identifier) =>
+    Rabel.pascalToCamelCase(extractName(identifier))
   | DotTyped.Dict(_, t) => Rabel.Types.dict(fromDotTyped(t))
   | DotTyped.Optional(t) => Rabel.Types.optional(fromDotTyped(t))
   | DotTyped.Array(t) => Rabel.Types.array(fromDotTyped(t))
   | DotTyped.Tuple(types) =>
     types |. Array.map(fromDotTyped) |. Rabel.Types.tuple
+  | DotTyped.Union(types) =>
+    types |. Array.map(fromDotTyped) |. Rabel.Types.union
   | DotTyped.Function({parameters, returnType}) =>
     Rabel.Types.function_(
       Array.map(parameters, ({name, type_, optional}) =>
@@ -43,8 +48,17 @@ let rec fromDotTyped =
       ),
       fromDotTyped(returnType),
     )
-
-  | _ => raise(ReasonGenerationError("Unknown dottyped type"));
+  | DotTyped.Object(obj) =>
+    Rabel.Types.record_(
+      Array.map(obj.properties, prop =>
+        (extractName(prop.name), fromDotTyped(prop.type_), prop.optional)
+      ),
+    )
+  | DotTyped.Promise(t) => Rabel.Types.promise(fromDotTyped(t))
+  | a => {
+      Js.log(a);
+      raise(ReasonGenerationError("Unknown dottyped type"));
+    };
 
 let rec compile =
         (~moduleName=?, ~typeTable=?, ~skipFmt=false, moduleDefinition) =>
@@ -255,6 +269,16 @@ let rec compile =
         extractName(name),
       ),
     )
+
+  | DotTyped.TypeAliasDeclaration(prop) =>
+    switch (prop.type_) {
+    | DotTyped.TypeAlias(_params, right) =>
+      Rabel.type_(
+        Rabel.pascalToCamelCase(extractName(prop.name)),
+        fromDotTyped(right),
+      )
+    | _ => ""
+    }
 
   | _ => raise(ReasonGenerationError("Unknown dottyped declaration"))
   };

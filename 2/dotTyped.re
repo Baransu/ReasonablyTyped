@@ -7,6 +7,7 @@ type identifier =
 
 /* TODO: Add support for JS Modules and JS typeof. */
 type t =
+  | StringLiteral(string)
   | String
   | Int
   | Float
@@ -25,7 +26,9 @@ type t =
   | Void
   | Null
   | Named(identifier)
-  | TypeAlias
+  | Typeof(t)
+  /* TODO: add support for bound, variance and default */
+  | TypeAlias(option(Belt.List.t(string)), t)
 and property = {
   name: identifier,
   type_: t,
@@ -58,4 +61,5 @@ and declaration =
   | FunctionDeclaration(letDeclaration)
   | ModuleDeclaration(moduleDeclaration)
   | ReactComponent(letDeclaration)
-  | EmptyDeclaration;
+  | EmptyDeclaration
+  | TypeAliasDeclaration(letDeclaration);

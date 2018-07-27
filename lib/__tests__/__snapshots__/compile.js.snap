@@ -44,7 +44,7 @@ exports[`Compile component.re 1`] = `
 "type props = {
   .
   \\"input\\": Js.Nullable.t(string),
-  \\"b\\": Js.Nullable.t(Js.boolean),
+  \\"b\\": Js.Nullable.t(bool),
 };
 
 module ReactComponent = {
@@ -53,10 +53,7 @@ module ReactComponent = {
   let make = (~input=?, ~b=?, children) => {
     let props: props = {
       \\"input\\": Js.Nullable.from_opt(input),
-      \\"b\\":
-        Js.Nullable.bind(Js.Nullable.from_opt(b), (. x) =>
-          Js.Boolean.to_js_boolean(x)
-        ),
+      \\"b\\": Js.Nullable.from_opt(b),
     };
     ReasonReact.wrapJsForReason(~reactClass=reactComponent, ~props, children);
   };

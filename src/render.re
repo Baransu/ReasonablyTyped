@@ -229,7 +229,7 @@ let react_component =
   ++ "  let make = "
   ++ lambda(
        List.map(
-         ((name, _js, _t, optional, _is_bool)) => Labelled(name, optional),
+         ((name, _js, _t, optional)) => Labelled(name, optional),
          props,
        )
        @ [Unlabelled("children")],
@@ -239,31 +239,17 @@ let react_component =
        ++ " = "
        ++ jsObject(
             {
-              let wrapArg = (~optional, ~is_bool, x) =>
-                switch (optional, is_bool) {
-                | (true, false) => applyArgs("Js.Nullable.from_opt", [x])
-                | (true, true) =>
-                  let bind = (v, f) =>
-                    applyArgs(
-                      "Js.Nullable.bind",
-                      [
-                        v,
-                        "[@bs]"
-                        ++ lambda([Unlabelled("x")], applyArgs(f, ["x"])),
-                      ],
-                    );
-                  bind(
-                    applyArgs("Js.Nullable.from_opt", [x]),
-                    "Js.Boolean.to_js_boolean",
-                  );
-                | (false, true) =>
-                  applyArgs("Js.Boolean.to_js_boolean", [x])
-                | (false, false) => x
+              let wrapArg = (~optional, x) =>
+                if (optional) {
+                  applyArgs("Js.Nullable.from_opt", [x]);
+                } else {
+                  x;
                 };
+
               List.map(
-                ((name, js, _t, optional, is_bool)) => (
+                ((name, js, _t, optional)) => (
                   js,
-                  wrapArg(~optional, ~is_bool, name),
+                  wrapArg(~optional, name),
                 ),
                 props,
               );

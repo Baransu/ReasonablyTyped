@@ -9,8 +9,8 @@ module ReactComponent = {
   external reactComponent : ReasonReact.reactClass = "ReactComponent";
   let make = (~input=?, ~b=?, children) => {
     let props: props = {
-      "input": Js.Nullable.from_opt(input),
-      "b": Js.Nullable.from_opt(b),
+      "input": Js.Nullable.fromOption(input),
+      "b": Js.Nullable.fromOption(b),
     };
     ReasonReact.wrapJsForReason(~reactClass=reactComponent, ~props, children);
   };

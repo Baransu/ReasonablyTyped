@@ -241,7 +241,7 @@ let react_component =
             {
               let wrapArg = (~optional, x) =>
                 if (optional) {
-                  applyArgs("Js.Nullable.from_opt", [x]);
+                  applyArgs("Js.Nullable.fromOption", [x]);
                 } else {
                   x;
                 };
